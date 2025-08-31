@@ -1,0 +1,23 @@
+Kω is back-EMF
+    faster, Kw bigger
+    
+V = IR + Kω
+    I = (V - Kw)/R
+    faster, I smaller
+    
+T = KI
+    faster, T smaller
+    T = K(V - Kw)/R
+    
+Assume no load, Battery Volt 12v, final speed is 20r/s
+w ~= V/K
+    K = V/w = 12/20
+    
+For wheel Moment of inertia
+J = (1/2)mr^2
+
+For  move of wheel
+T is the net toque to the wheel Tnet = Ttotal - Tload
+T = J(dw/dt)
+dw = (T/J)*dt
+    

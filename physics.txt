@@ -1,0 +1,45 @@
+Basic DC Motor Equations:
+
+    Voltage equation:
+
+V = IR + Kω  (where Kω is back-EMF)
+V = Applied voltage (V)
+I = Current (A)
+R = Internal resistance (2Ω)
+K = Motor constant (V/rad/s)
+ω = Angular velocity (rad/s)
+
+    Torque equation:
+
+T = KI  (where K is same as above)
+T = Torque (N⋅m)
+
+    Motion equation for wheel:
+
+T = J(dω/dt)  (during acceleration)
+J = Moment of inertia (kg⋅m²)
+
+For a wheel:
+
+J = (1/2)mr²  
+m = mass (0.1 kg)
+r = radius (meters, need this value)
+
+At steady state:
+
+V = IR + Kω
+T = KI = Load torque
+
+Final speed-voltage relationship (steady state):
+
+ω = (V/K) - (R/K²)T_load
+
+If load torque is small:
+ω ≈ V/K
+
+To get exact values, you need:
+
+    Motor constant K
+    Wheel radius
+    Load torque (friction, air resistance)
+    No-load speed at rated voltage
