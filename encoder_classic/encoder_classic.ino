@@ -114,6 +114,9 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
 
+  //PWM OUTPUT
+  pinMode(5, OUTPUT);
+
   //ext interrupt pin, externally connect to a 10k ohm pull down resistor
   pinMode(INT0_PIN, INPUT);
   //enable INT0 interrupt, by rising edge
@@ -146,6 +149,7 @@ void setup() {
   //set_timer2_period(100000);
   //Timer2_LoadTime();
   //timer2_start();
+  analogWrite(5, 128);
 }
 
 inline void Timer2_Timeup(void) {
@@ -179,6 +183,9 @@ ISR(TIMER2_OVF_vect){
   }
 }
 
+ISR(TIMER1_CAPT_vect) {
+  PWM_FallingEdge();
+}
 
 //ISR for timer2 compare A match
 ISR(TIMER2_COMPA_vect){
@@ -189,12 +196,14 @@ ISR(TIMER2_COMPA_vect){
 }
 
 int i = 0;
+int j = 0;
 float load_toq = 0.0;
-float current_w = 0;//current radias speed
+float current_w = 0.0;//current radias speed
 float input_v = 12.0;//input voltage
 float pulse_period = 0.0;//us
 long pulse_period_i = 0;
 #define INTERVAL_TIME     (0.01)//sec
+float current_pwm_copy = 0.0;
 
 volatile bool is_job_done = false;
 bool is_w_too_small = true;
@@ -229,8 +238,15 @@ void loop() {
         }
       }
       else {
-        current_pwm = (pwm_fall_timercout_copy - pwm_rise_timercout_copy) / (pwm_rise_timercout_copy - pwm_rise_timercout_copy_prev);
+        unsigned short duty = pwm_fall_timercout_copy - pwm_rise_timercout_copy;
+        unsigned short period = pwm_rise_timercout_copy - pwm_rise_timercout_copy_prev;
+        float duty_f = duty;
+        float period_f = period;
+        //current_pwm = (pwm_fall_timercout_copy - pwm_rise_timercout_copy) / (pwm_rise_timercout_copy - pwm_rise_timercout_copy_prev);
+        current_pwm = duty_f / period_f;
         pwm_duty_average = (pwm_duty_average * pwm_sample_count + current_pwm) / (pwm_sample_count + 1);
+
+        current_pwm_copy = current_pwm;
       }
 
       pwm_rise_timercout_copy_prev = pwm_rise_timercout_copy;
@@ -275,10 +291,23 @@ void loop() {
       //Calculate the current radius speed, and the period os the pulse
 #if 0      
       current_w = DELTA1_W(input_v, current_w, load_toq, INTERVAL_TIME);
-#else      
-      float t0 = TimeFromW(input_v, load_toq, current_w);
+#else   
+      float t0;  
+      if(current_w > 0.1 && current_w < (0.99 * W_FINAL)){
+        t0 = TimeFromW(input_v, load_toq, current_w);
+      }
+      else if(current_w >= (0.99 * W_FINAL)) {
+        t0 = 10.0;
+      }
+      else {
+        t0 = 0.0;
+      }
       current_w = RadiusSpeed(input_v, load_toq, (t0 + INTERVAL_TIME));
 #endif      
+
+      if(current_w < 0) {
+        current_w = 0.0;
+      }
 
       if(abs(current_w) > 0.1) {//we only output pulse with radius speed is more than 0.1 round per secound
         pulse_period = (1 / (abs(current_w) * 20.0)) * 1000000.0;//NEXT_PULS_TIME(abs(current_w)) * 1000000;
@@ -302,16 +331,29 @@ void loop() {
       i ++;
       if(i >= 100) {//every 1 sec
         i = 0;
+        j ++;
         //float data = DELTA1_W(BAT_V, current_w, 1, 0.01);//MOTO_T(BAT_V, current_w);
         //data = DELTA_W(BAT_V, data, 0, 0.01);
         
         //Serial.println(current_w);
-        Serial.println(input_v);
+        Serial.print("s:");
+        Serial.print(current_w);
+        Serial.print(",");
+        Serial.print("v:");
+        Serial.print(input_v);
+        Serial.print(",");
+        Serial.print("T:");
+        Serial.println(load_toq);
         //Serial.println(pulse_period_i);
+
+#if 0        
         load_toq += 0.1;
         if(load_toq >= 7) {//MAX Toque is 7.2Nm from Motor
           load_toq = 0;
         }
+#else
+        load_toq = ((j/4) % 2) * 2;
+#endif        
         
       }
     }
